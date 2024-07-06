@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ejecutar Playbooks</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            text-align: center;
+            height: 100vh;
+            background-image: url('https://i.pinimg.com/originals/8f/2e/30/8f2e3012604d1e2a2ae699eb180ead70.jpg'); /* Ruta a tu imagen de fondo */
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        .container {
+            width: 600px;
+            padding: 20px;
+            background-color: rgba(255, 255, 255, 0.9); /* Fondo semitransparente para hacer el texto legible */
+            border-radius: 5px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1); /* Sombra suave */
+        }
+        .terminal {
+            background-color: transparent; /* Fondo de la terminal transparente para mostrar la imagen de fondo */
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            overflow-y: scroll;
+            height: 300px;
+            text-align: left;
+            white-space: pre-wrap;
+        }
+        .button-container {
+            margin-top: 20px;
+        }
+        .button-container button, #btn-crear {
+            margin: 0 10px;
+            padding: 10px 20px;
+            font-size: 16px;
+            border-radius: 5px;
+            cursor: pointer;
+            border: none;
+            color: white;
+        }
+        .button-container .clean {
+            background-color: #3498db;
+        }
+        .button-container .clean:hover, #btn-crear.clean:hover {
+            background-color: #2980b9;
+        }
+        .button-container .create, #btn-crear.create {
+            background-color: #4CAF50;
+        }
+        .button-container .create:hover, #btn-crear.create:hover {
+            background-color: #45a049;
+        }
+        .button-container .resources {
+            background-color: #f39c12;
+        }
+        .button-container .resources:hover {
+            background-color: #e67e22;
+        }
+        .error {
+            color: red;
+            font-size: 14px;
+        }
+        #input-container {
+            display: none;
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2>Ejecutar Playbooks</h2>
+        <div class="terminal" id="terminal"></div>
+        <div id="input-container">
+            <input type="text" id="directorio" placeholder="Ruta del directorio">
+            <button id="btn-crear" class="create" type="button" onclick="ejecutarPlaybook()">Crear</button>
+        </div>
+        <div class="button-container">
+            <button class="create" type="button" onclick="mostrarInput()">Crear Directorio</button>
+            <button class="resources" type="button" onclick="ejecutarPlaybookRecursos()">Recursos</button>
+            <button class="clean" type="button" onclick="limpiarTodo()">Limpiar</button>
+        </div>
+        <div class="error" id="error"></div>
+    </div>
+
+    <script>
+        function mostrarInput() {
+            var inputContainer = document.getElementById('input-container');
+            inputContainer.style.display = 'block';
+        }
+
+        function ejecutarPlaybook() {
+            var terminal = document.getElementById('terminal');
+            var directorio = document.getElementById('directorio').value;
+            var error = document.getElementById('error');
+
+            if (!directorio) {
+                error.textContent = 'Favor de llenar el campo';
+                return;
+            } else {
+                error.textContent = ''; // Limpiar el mensaje de error si el campo no está vacío
+            }
+
+            fetch('http://192.168.73.133:5000/ejecutar_playbook', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ directorio: directorio })
+            })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Error en la ejecución del playbook');
+                }
+                return response.json(); // Leer la respuesta como JSON
+            })
+            .then(data => {
+                // Mostrar la salida del playbook en la terminal emulada
+                terminal.innerHTML = '<pre>' + data.output + '</pre>';
+                terminal.innerHTML += '<p>--- Fin de la ejecución ---</p>';
+            })
+            .catch(error => {
+                terminal.innerHTML += '<p>Error: ' + error.message + '</p>';
+            });
+        }
+
+        function ejecutarPlaybookRecursos() {
+            var terminal = document.getElementById('terminal');
+
+            fetch('http://192.168.73.133:5000/ejecutar_playbook_recursos', {
+                method: 'POST',
+            })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Error en la ejecución del playbook');
+                }
+                return response.json(); // Leer la respuesta como JSON
+            })
+            .then(data => {
+                // Mostrar la salida del playbook en la terminal emulada
+                terminal.innerHTML = '<pre>' + data.output + '</pre>';
+                terminal.innerHTML += '<p>--- Fin de la ejecución ---</p>';
+            })
+            .catch(error => {
+                terminal.innerHTML += '<p>Error: ' + error.message + '</p>';
+            });
+        }
+
+        function limpiarTodo() {
+            var terminal = document.getElementById('terminal');
+            var inputContainer = document.getElementById('input-container');
+            var directorioInput = document.getElementById('directorio');
+            var error = document.getElementById('error');
+
+            terminal.innerHTML = ''; // Limpiar contenido de la terminal
+            inputContainer.style.display = 'none'; // Ocultar contenedor de entrada
+            directorioInput.value = ''; // Limpiar campo de texto
+            error.textContent = ''; // Limpiar mensaje de error
+        }
+    </script>
+</body>
+</html>
+

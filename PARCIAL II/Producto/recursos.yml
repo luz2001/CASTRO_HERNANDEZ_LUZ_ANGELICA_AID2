@@ -1,0 +1,32 @@
+---
+- name: Recopilar estado de la VM (incluyendo uso de CPU, RAM y particiones de disco)
+  hosts: linux
+  gather_facts: yes  # Esto permite recopilar hechos del sistema automáticamente
+
+  tasks:
+    - name: Obtener uso de CPU
+      ansible.builtin.shell:
+        cmd: "top -bn1 | grep 'Cpu(s)' | sed 's/.*, *\\([0-9.]*\\)%* id.*/\\1/'"
+      register: cpu_usage_output
+
+    - name: Mostrar uso de CPU
+      ansible.builtin.debug:
+        msg: "Uso actual de CPU: {{ cpu_usage_output.stdout }}%"
+
+    - name: Obtener uso de RAM
+      ansible.builtin.shell:
+        cmd: "free | grep Mem | awk '{print $3/$2 * 100.0}'"
+      register: ram_usage_output
+
+    - name: Mostrar uso de RAM
+      ansible.builtin.debug:
+        msg: "Uso actual de RAM: {{ ram_usage_output.stdout }}%"
+
+    - name: Obtener información de particiones de disco
+      ansible.builtin.shell:
+        cmd: "df -h"
+      register: disk_partitions_output
+
+    - name: Mostrar información de particiones de disco
+      ansible.builtin.debug:
+        msg: "{{ disk_partitions_output.stdout_lines }}"

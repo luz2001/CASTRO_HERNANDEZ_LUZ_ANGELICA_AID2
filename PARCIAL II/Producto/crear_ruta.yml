@@ -1,0 +1,11 @@
+---
+- name: Directorio solicitado
+  hosts: linux
+  become: yes
+
+  tasks:
+    - name: Crear directorio solicitado
+      file:
+        path: /home/web/logs
+        state: directory
+        mode: '0755'

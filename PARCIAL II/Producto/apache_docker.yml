@@ -1,0 +1,75 @@
+---
+- name: Desplegar contenedor Docker con Apache y un index.html personalizado
+  hosts: linux
+  become: yes
+
+  tasks:
+    - name: Instalar paquetes necesarios para Docker
+      yum:
+        name:
+          - yum-utils
+          - device-mapper-persistent-data
+          - lvm2
+        state: present
+
+    - name: Añadir el repositorio de Docker
+      command: >
+        yum-config-manager
+        --add-repo
+        https://download.docker.com/linux/centos/docker-ce.repo
+
+    - name: Instalar Docker
+      yum:
+        name: docker-ce
+        state: present
+
+    - name: Iniciar el servicio de Docker
+      service:
+        name: docker
+        state: started
+        enabled: yes
+
+    - name: Descargar la imagen de httpd
+      community.docker.docker_image:
+        name: httpd
+        source: pull
+
+    - name: Ejecutar el contenedor Docker
+      community.docker.docker_container:
+        name: contenedor_apache
+        image: httpd
+        state: started
+        restart_policy: always  # Asegura que el contenedor se reinicie si falla
+        ports:
+          - "80:80"
+        volumes:
+          - /var/www/html:/usr/local/apache2/htdocs
+
+    - name: Asegurarse de que el directorio /var/www/html exista y tenga el contexto adecuado
+      file:
+        path: /var/www/html
+        state: directory
+        owner: root
+        group: root
+        mode: '0755'
+        setype: httpd_sys_content_t
+        selevel: s0
+
+    - name: Copiar el archivo index.html personalizado al directorio del host Docker
+      copy:
+        src: /etc/ansible/index.html
+        dest: /var/www/html/index.html
+        owner: root
+        group: root
+        mode: '0644'
+
+    - name: Detener el contenedor de Apache para reiniciar
+      community.docker.docker_container:
+        name: contenedor_apache
+        state: stopped
+
+    - name: Iniciar el contenedor de Apache para aplicar los cambios
+      community.docker.docker_container:
+        name: contenedor_apache
+        state: started
+
